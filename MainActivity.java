@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -28,18 +29,26 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private Button button1, button2;
-    private ImageView imgView1;
+/*    private ImageView imgView1;
     EditText editt1;
-
+    int def = 0X000000;*/
     RecyclerView recyclerView;
+    ImageAdapter imageAdapter;
     LinearLayoutManager llm;
 
-    private Bitmap bitmap = null;
-    URL url1;
-    String urlString;
+/*    Palette palette;
+    Palette.PaletteAsyncListener paletteListener;*/
+
+/*    URL url1;
+    String urlString;*/
+    List results;
+    Bitmap bitmap = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,25 +57,43 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        imgView1 = (ImageView) findViewById(R.id.imgView1);
+//        imgView1 = (ImageView) findViewById(R.id.imgView1);
 
-        editt1 = (EditText) findViewById(R.id.editt1);
+//        editt1 = (EditText) findViewById(R.id.editt1);
         //RecyclerView
         recyclerView = (RecyclerView) findViewById(R.id.cardList);
         recyclerView.setHasFixedSize(true);
         llm = new LinearLayoutManager(this);
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(llm);
+        //pass URLS as args
+        new ImageDownloader().execute(Images.imageUrls);
+//        imageAdapter = new ImageAdapter(getImageInfo(bitmap));
+        recyclerView.setAdapter(imageAdapter);
 
+        /*paletteListener = new Palette.PaletteAsyncListener() {
+            public void onGenerated(Palette palette){
+                getWindow().getDecorView().setBackgroundColor(palette.getLightVibrantSwatch().getRgb());
+                Palette.Swatch vibrant = palette.getVibrantSwatch();
+                if (vibrant != null) {
+                    // If we have a vibrant color
+                    // update the title TextView
+                    titleView.setBackgroundColor(
+                            vibrant.getRgb());
+                    titleView.setTextColor(
+                            vibrant.getTitleTextColor());
+                }
+                imgView1.setBackgroundColor(palette.getLightVibrantSwatch().getRgb());
+            }
+        };*/
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(getApplicationContext(), "Floating button", Toast.LENGTH_SHORT)
-                        .show();
+                Toast.makeText(getApplicationContext(), "Floating button", Toast.LENGTH_SHORT).show();
             }
         });
-        button1 = (Button) findViewById(R.id.button1);
+        /*button1 = (Button) findViewById(R.id.button1);
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -76,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
                 } catch (MalformedURLException e){
                     Log.e("URL", "Something went wrong while" + " retrieving bitmap from ");
                 }
-                    new ImageDownloader().execute(url1);
+                    new ImageDownloader().execute(Images.imageUrls);
             }
-        });
+        });*/
 
         button2 = (Button) findViewById(R.id.button2);
         button2.setOnClickListener(new View.OnClickListener(){
@@ -107,11 +134,9 @@ public class MainActivity extends AppCompatActivity {
 
         switch (id) {
             case R.id.action_settings:
-                Toast.makeText(getApplicationContext(), "Settings chosen", Toast.LENGTH_SHORT)
-                        .show();
+                Toast.makeText(getApplicationContext(), "Settings chosen", Toast.LENGTH_SHORT).show();
             case R.id.action_others: {
-                Toast.makeText(getApplicationContext(), "Others chosen", Toast.LENGTH_SHORT)
-                        .show();
+                Toast.makeText(getApplicationContext(), "Others chosen", Toast.LENGTH_SHORT).show();
             }
             default:
                 return true;
@@ -129,11 +154,11 @@ public class MainActivity extends AppCompatActivity {
         if (activeNetwork != null) { // connected to the internet
             if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
                 // connected to wifi
-                Toast.makeText(getApplicationContext(), activeNetwork.getTypeName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "On WI-FI", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE) {
                 // connected to the mobile provider's data plan
-                Toast.makeText(getApplicationContext(), activeNetwork.getTypeName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "On mobile data connection", Toast.LENGTH_SHORT).show();
                 return true;
             }
         } else {
@@ -142,6 +167,16 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         return false;
+    }
+
+    private List<ImageInfo> getImageInfo(Bitmap bitmap) {
+         results = new ArrayList<ImageInfo>();
+//        new ImageDownloader().execute((Images.imageUrls));
+        for (int index = 0; index<51; index++) {
+            ImageInfo obj = new ImageInfo(bitmap);
+            results.add(index, obj);
+        }
+        return results;
     }
 
     private InputStream openHttpConnection(String urlStr) throws IOException{
@@ -177,12 +212,11 @@ public class MainActivity extends AppCompatActivity {
         return in;
     }
 
-    private class ImageDownloader extends AsyncTask<URL, Void, Bitmap>{
+    private class ImageDownloader extends AsyncTask<String, Void, Bitmap>{
 
         Bitmap bm = null;
-        protected Bitmap doInBackground(URL... urls) {
-            String urlStr = urls[0].toString();
-//            int count = url.length;
+        protected Bitmap doInBackground(String... urls) {
+            int count = urls.length;
             /*long totalSize = 0;
             for (int i = 0; i < count; i++) {
                 totalSize += Downloader.downloadFile(urls[i]);
@@ -192,8 +226,10 @@ public class MainActivity extends AppCompatActivity {
             }
             return totalSize;*/
             try {
-                bm = downloadBitmap(urlStr);
-                return bm;
+                for(int i=0; i<count; i++) {
+                    bm = downloadBitmap(urls[0]);
+                    return bm;
+                }
             } catch (IOException e) {
             }
             return null;
@@ -207,10 +243,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Bitmap result) {
+        protected void onPostExecute(Bitmap result){
             Log.i("Async-Example", "onPostExecute Called");
             result = bm;
-            imgView1.setImageBitmap(result);
+//            imgView1.setImageBitmap(result);
+//            imageAdapter = new ImageAdapter(getImageInfo(result));
+//            getImageInfo(result);
         }
 
         /*protected void onProgressUpdate(Integer... progress) {
@@ -218,19 +256,26 @@ public class MainActivity extends AppCompatActivity {
         }*/
 
         private Bitmap downloadBitmap(String urlStr) throws IOException {
+
             InputStream in = null;
             final String url = urlStr;
             try{
                 in = openHttpConnection(url);
                 bitmap = BitmapFactory.decodeStream(in);
             }catch(IOException e){
-                Log.e("ImageDownloader", "Something went wrong while" +
-                        " retrieving bitmap from " + url + e.toString());
+                Log.e("ImageDownloader", "Something went wrong while" + " retrieving bitmap from " + url + e.toString());
             }finally{
                 if (in != null) {
                     in.close();
                 }
             }
+            /*if (bitmap != null && !bitmap.isRecycled()) {
+                 palette = Palette.from(bitmap).generate();?
+                int col = palette.getLightVibrantColor(def);
+               getWindow().getDecorView().setBackgroundColor(palette.getLightVibrantColor(def));
+                View root = imgView1.getRootView();
+                root.setBackgroundColor(palette.getLightVibrantColor(def));
+            }*/
             return bitmap;
         }
     }
